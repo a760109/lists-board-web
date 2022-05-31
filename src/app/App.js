@@ -1,13 +1,13 @@
 import { Auth } from './auth';
 import { Provider } from 'react-redux';
 import store from './store';
-import Login from 'app/main/login/Login';
+import Home from 'app/main/home/Home';
 
 function App() {
   return (
     <Provider store={store}>
       <Auth>
-        <Login />
+        <Home />
       </Auth>
     </Provider>
   );

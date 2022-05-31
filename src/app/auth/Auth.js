@@ -7,7 +7,6 @@ import axios from 'axios';
 import _ from 'lodash';
 
 export default function Auth({ children }) {
-  console.log(`window.location.origin=${window.location.origin}`);
   return (
     <Auth0Provider domain={Config.auth0.domain} clientId={Config.auth0.clientId} redirectUri={window.location.origin}>
       <Auth0>{children}</Auth0>
@@ -33,10 +32,9 @@ function Auth0({ children }) {
             data: { idToken: claims.__raw },
           });
 
-          console.log(resp.data.result);
-
           if (!_.isEmpty(resp.data.result)) {
             dispatch(exchangeToken(claims.__raw, resp.data.result));
+            localStorage.setItem('auth0Token', claims.__raw);
           } else {
             dispatch(clearToken());
             auth0.logout();
