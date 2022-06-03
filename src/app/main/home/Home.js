@@ -146,12 +146,12 @@ export default function Home() {
             <Typography variant='h6' noWrap component='div' sx={{ display: { xs: 'none', sm: 'block' } }}>
               {userData.name}
             </Typography>
-            <Search>
+            {/* <Search>
               <SearchIconWrapper>
                 <SearchIcon />
               </SearchIconWrapper>
               <StyledInputBase placeholder='Search…' inputProps={{ 'aria-label': 'search' }} />
-            </Search>
+            </Search> */}
             <Box sx={{ flexGrow: 1 }} />
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
               <IconButton
