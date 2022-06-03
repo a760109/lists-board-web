@@ -9,26 +9,36 @@ import { FormProvider, useForm } from 'react-hook-form';
 import FormTextField from 'app/widgets/Form/FormTextField';
 import FormSelectField from 'app/widgets/Form/FormSelectField';
 import { yupResolver } from '@hookform/resolvers/yup';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import * as yup from 'yup';
 import _ from 'lodash';
 
 const schema = yup.object({
   name: yup.string().max(320).required(),
-  scope: yup.string().max(7).required(),
+  descriptions: yup.string().nullable(true),
+  price: yup.number().required(),
+  cost: yup.number().required(),
+  status: yup.string().required(),
+  taskId: yup.number().required(),
 });
 
 function getDefaultValues(data = {}) {
   return {
-    id: data.id ?? null,
-    name: data.name ?? 'Task Name',
+    taskId: data.taskId,
+    name: data.name ?? 'Subtask Name',
     descriptions: data.descriptions ?? '',
-    scope: data.scope ?? 'private',
-    releaseAccount: data.releaseAccount ?? [],
+    price: data.price ?? 0,
+    cost: data.cost ?? 0,
+    status: data.status ?? 'pending',
   };
 }
 
-function TaskInfoDialog({ open, data, onClose, onSubmitted }) {
+function SubTaskInfoDialog({ open, data, onClose, onSubmitted }) {
   const form = useForm({
     mode: 'onChange',
     defaultValues: getDefaultValues(data),
@@ -43,7 +53,7 @@ function TaskInfoDialog({ open, data, onClose, onSubmitted }) {
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>New Task</DialogTitle>
+      <DialogTitle>New Subtask</DialogTitle>
       <DialogContent>
         <Grid container spacing={1}>
           <FormProvider {...form}>
@@ -51,9 +61,18 @@ function TaskInfoDialog({ open, data, onClose, onSubmitted }) {
               <FormTextField label='Name' name='name' />
             </Grid>
             <Grid item xs={12} sx={{ mt: 1 }}>
-              <FormSelectField label='Scope' name='scope'>
-                <MenuItem value={'private'}>Private</MenuItem>
-                <MenuItem value={'public'}>Public</MenuItem>
+              <FormTextField label='Descriptions' name='descriptions' />
+            </Grid>
+            <Grid item xs={12} sx={{ mt: 1 }}>
+              <FormTextField label='Price' name='price' />
+            </Grid>
+            <Grid item xs={12} sx={{ mt: 1 }}>
+              <FormTextField label='Cost' name='cost' />
+            </Grid>
+            <Grid item xs={12} sx={{ mt: 1 }}>
+              <FormSelectField label='Status' name='status'>
+                <MenuItem value={'pending'}>Pending</MenuItem>
+                <MenuItem value={'done'}>Done</MenuItem>
               </FormSelectField>
             </Grid>
           </FormProvider>
@@ -69,4 +88,4 @@ function TaskInfoDialog({ open, data, onClose, onSubmitted }) {
   );
 }
 
-export default TaskInfoDialog;
+export default SubTaskInfoDialog;

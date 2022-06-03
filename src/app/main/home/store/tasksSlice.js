@@ -6,14 +6,19 @@ export const getTasksData = createAsyncThunk('tasks/getData', (values, { extra }
 });
 
 export const createTask = createAsyncThunk('tasks/createTask', (values, { extra }) => {
-  let resp = extra.api.post(`/tasks`, values);
+  return extra.api.post(`/tasks`, values);
+});
 
-  console.log(resp);
+export const createSubtask = createAsyncThunk('tasks/createSubtask', (values, { extra }) => {
+  return extra.api.post(`/tasks/job`, values);
+});
 
-  const payload = {};
-  return {
-    payload,
-  };
+export const updateTask = createAsyncThunk('tasks/createTask', (values, { extra }) => {
+  return extra.api.put(`/tasks`, values);
+});
+
+export const updateSubtask = createAsyncThunk('tasks/createSubtask', (values, { extra }) => {
+  return extra.api.put(`/tasks/job`, values);
 });
 
 const initialState = {
@@ -23,14 +28,48 @@ const initialState = {
 
 const parserDatas = data => {
   const tasks = data.tasks.rows.reduce((m, task) => {
+    task.id = _.toNumber(task.id);
+
+    task.pendingCount = 0;
+    task.doneCount = 0;
+    task.doneCost = 0;
+
     m[task.id] = task;
     return m;
   }, {});
 
   const jobs = data.jobs.rows.reduce((m, job) => {
-    // m[task.id] = task;
+    job.taskId = _.toNumber(job.taskId);
+    job.id = _.toNumber(job.id);
+    job.cost = _.toNumber(job.cost);
+    job.price = _.toNumber(job.price);
+
+    if (!(job.taskId in m)) {
+      m[job.taskId] = [];
+    }
+
+    if (job.status === 'pending') {
+      tasks[job.taskId].pendingCount += 1;
+    } else {
+      tasks[job.taskId].doneCount += 1;
+      tasks[job.taskId].doneCost += job.cost;
+    }
+
+    m[job.taskId].push(job);
     return m;
   }, {});
+
+  for (let task of Object.values(tasks)) {
+    let total = task.pendingCount + task.doneCount;
+    task.progress = ((task.doneCount * 100) / total) | 0;
+    if (total === 0 || task.progress === 100) {
+      task.status = 'done';
+    } else if (task.progress === 0) {
+      task.status = 'pending';
+    } else {
+      task.status = 'process';
+    }
+  }
 
   return {
     tasks,
@@ -38,18 +77,24 @@ const parserDatas = data => {
   };
 };
 
+const updateData = (state, action) => {
+  const datas = parserDatas(action.payload.data.result);
+  return {
+    ...state,
+    tasks: datas.tasks,
+    jobs: datas.jobs,
+  };
+};
+
 const tasksSlice = createSlice({
   name: 'home/tasks',
   initialState,
   extraReducers: {
-    [getTasksData.fulfilled]: (state, action) => {
-      const datas = parserDatas(action.payload.data.result);
-      return {
-        ...state,
-        tasks: datas.tasks,
-        jobs: datas.jobs,
-      };
-    },
+    [getTasksData.fulfilled]: updateData,
+    [createTask.fulfilled]: updateData,
+    [createSubtask.fulfilled]: updateData,
+    [updateTask.fulfilled]: updateData,
+    [updateSubtask.fulfilled]: updateData,
   },
 });
 

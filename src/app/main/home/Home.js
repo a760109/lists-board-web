@@ -18,7 +18,6 @@ import Badge from '@mui/material/Badge';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import TaskInfoDialog from './components/TaskInfoDialog';
-import { date } from 'yup';
 import { getTasksData, createTask } from './store/tasksSlice';
 import Tasks from './Tasks';
 
@@ -93,8 +92,8 @@ export default function Home() {
   };
 
   const handleOnCreate = React.useCallback(
-    async date => {
-      dispatch(createTask(date));
+    async data => {
+      dispatch(createTask(data));
       setIsOpenNewDialog(false);
     },
     [dispatch],
@@ -195,7 +194,7 @@ export default function Home() {
           onClose={() => {
             setIsOpenNewDialog(false);
           }}
-          onCreate={handleOnCreate}
+          onSubmitted={handleOnCreate}
         />
       </Box>
       <Tasks />
