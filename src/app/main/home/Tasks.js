@@ -17,18 +17,18 @@ import Collapse from '@mui/material/Collapse';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import SubTaskInfoDialog from './components/SubTaskInfoDialog';
-import { getTasksData, createSubtask, updateTask, updateSubtask } from './store/tasksSlice';
+import { getTasksData, createSubtask, updateTask, updateSubtask, deleteTask, deleteSubtask } from './store/tasksSlice';
 import _ from 'lodash';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
 import TaskInfoDialog from './components/TaskInfoDialog';
 import { blueGrey, green, blue } from '@mui/material/colors';
 import CircularProgressWithLabel from 'app/widgets/CircularProgressWithLabel';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Tooltip from '@mui/material/Tooltip';
 import { useAlert } from 'app/widgets/Alert';
+import { showSuccess } from 'app/store/messageSlice';
 
 const colorSelect = {
   tPendingButton: blueGrey[300],
@@ -60,6 +60,7 @@ function TeakMoreMenu(props) {
   const { taskId, tasksData, setSubTaskData, setTaskData } = props;
 
   const alert = useAlert();
+  const dispatch = useDispatch();
 
   const [anchorEl, setAnchorEl] = React.useState();
 
@@ -78,6 +79,11 @@ function TeakMoreMenu(props) {
         <MenuItem
           onClick={async () => {
             const ok = await alert('Are you sure you want to delete?', 'Confirmation');
+
+            if (ok) {
+              dispatch(deleteTask({ id: taskId }));
+              dispatch(showSuccess());
+            }
           }}
         >
           Delete
@@ -88,7 +94,10 @@ function TeakMoreMenu(props) {
 }
 
 function SubTeakMoreMenu(props) {
-  const { onClickEdie } = props;
+  const { jobId, onClickEdie } = props;
+
+  const alert = useAlert();
+  const dispatch = useDispatch();
 
   const [anchorEl, setAnchorEl] = React.useState();
 
@@ -103,7 +112,18 @@ function SubTeakMoreMenu(props) {
       </IconButton>
       <Menu anchorEl={anchorEl} keepMounted open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={onClickEdie}>Edit</MenuItem>
-        <MenuItem>Delete</MenuItem>
+        <MenuItem
+          onClick={async () => {
+            const ok = await alert('Are you sure you want to delete?', 'Confirmation');
+
+            if (ok) {
+              dispatch(deleteSubtask({ id: jobId }));
+              dispatch(showSuccess());
+            }
+          }}
+        >
+          Delete
+        </MenuItem>
       </Menu>
     </div>
   );
@@ -268,6 +288,7 @@ export default function Tasks() {
                                         }
                                         action={
                                           <SubTeakMoreMenu
+                                            jobId={d.id}
                                             onClickEdie={() => {
                                               setSubTaskData({ ...d });
                                             }}

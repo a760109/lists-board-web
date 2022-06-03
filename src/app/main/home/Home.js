@@ -20,6 +20,7 @@ import MoreIcon from '@mui/icons-material/MoreVert';
 import TaskInfoDialog from './components/TaskInfoDialog';
 import { getTasksData, createTask } from './store/tasksSlice';
 import Tasks from './Tasks';
+import { showSuccess } from 'app/store/messageSlice';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -95,6 +96,7 @@ export default function Home() {
     async data => {
       dispatch(createTask(data));
       setIsOpenNewDialog(false);
+      dispatch(showSuccess());
     },
     [dispatch],
   );

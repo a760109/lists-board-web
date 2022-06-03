@@ -9,6 +9,14 @@ export const createTask = createAsyncThunk('tasks/createTask', (values, { extra 
   return extra.api.post(`/tasks`, values);
 });
 
+export const deleteTask = createAsyncThunk('tasks/deleteTask', (values, { extra }) => {
+  return extra.api.delete(`/tasks/${values.id}`, values);
+});
+
+export const deleteSubtask = createAsyncThunk('tasks/deleteSubtask', (values, { extra }) => {
+  return extra.api.delete(`/tasks/job/${values.id}`, values);
+});
+
 export const createSubtask = createAsyncThunk('tasks/createSubtask', (values, { extra }) => {
   return extra.api.post(`/tasks/job`, values);
 });
@@ -95,6 +103,8 @@ const tasksSlice = createSlice({
     [createSubtask.fulfilled]: updateData,
     [updateTask.fulfilled]: updateData,
     [updateSubtask.fulfilled]: updateData,
+    [deleteTask.fulfilled]: updateData,
+    [deleteSubtask.fulfilled]: updateData,
   },
 });
 
