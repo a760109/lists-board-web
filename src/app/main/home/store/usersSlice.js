@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import _ from 'lodash';
 
 export const getUsers = createAsyncThunk('users/getUsers', (values, { extra }) => {
   return extra.api.get(`/users`);

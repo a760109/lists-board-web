@@ -12,6 +12,7 @@ const local = {
 const prod = {
   auth0,
   apiBaseURL: 'https://api.a760109.goportal.one/lists/v1',
+  wsURL: 'ws://api.a760109.goportal.one:8443',
 };
 
 const hostnameToConfig = {
