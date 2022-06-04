@@ -3,8 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import Config from 'config';
 import { exchangeToken, clearToken } from 'app/auth/store/userSlice';
+import { ListWebSocket } from 'app/services/webSocket';
 import axios from 'axios';
 import _ from 'lodash';
+import { setupAPIMiddlware } from 'app/services/api';
 
 export default function Auth({ children }) {
   return (
@@ -34,7 +36,8 @@ function Auth0({ children }) {
 
           if (!_.isEmpty(resp.data.result)) {
             dispatch(exchangeToken(claims.__raw, resp.data.result));
-            localStorage.setItem('auth0Token', claims.__raw);
+            setupAPIMiddlware(claims.__raw);
+            ListWebSocket.connect(claims.__raw);
           } else {
             dispatch(clearToken());
             auth0.logout();

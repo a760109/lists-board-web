@@ -6,6 +6,7 @@ const auth0 = {
 const local = {
   auth0,
   apiBaseURL: 'http://localhost:8443/lists/v1',
+  wsURL: 'ws://localhost:8443',
 };
 
 const prod = {

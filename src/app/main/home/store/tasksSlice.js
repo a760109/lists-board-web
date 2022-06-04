@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, createAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import _ from 'lodash';
 
 export const getTasksData = createAsyncThunk('tasks/getData', (values, { extra }) => {

@@ -18,6 +18,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import SubTaskInfoDialog from './components/SubTaskInfoDialog';
 import { getTasksData, createSubtask, updateTask, updateSubtask, deleteTask, deleteSubtask } from './store/tasksSlice';
+import { getUsers } from './store/usersSlice';
 import _ from 'lodash';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -29,6 +30,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Tooltip from '@mui/material/Tooltip';
 import { useAlert } from 'app/widgets/Alert';
 import { showSuccess } from 'app/store/messageSlice';
+import { ListWebSocket } from 'app/services/webSocket';
 
 const colorSelect = {
   tPendingButton: blueGrey[300],
@@ -74,16 +76,30 @@ function TeakMoreMenu(props) {
         <MoreVertIcon fontSize='small' />
       </IconButton>
       <Menu anchorEl={anchorEl} keepMounted open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => setSubTaskData({ taskId: parseInt(taskId) })}>Add Subtask</MenuItem>
-        <MenuItem onClick={() => setTaskData({ ...tasksData[taskId] })}>Edit</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setSubTaskData({ taskId: parseInt(taskId) });
+            setAnchorEl(null);
+          }}
+        >
+          Add Subtask
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setTaskData({ ...tasksData[taskId] });
+            setAnchorEl(null);
+          }}
+        >
+          Edit
+        </MenuItem>
         <MenuItem
           onClick={async () => {
             const ok = await alert('Are you sure you want to delete?', 'Confirmation');
-
             if (ok) {
               dispatch(deleteTask({ id: taskId }));
               dispatch(showSuccess());
             }
+            setAnchorEl(null);
           }}
         >
           Delete
@@ -111,15 +127,22 @@ function SubTeakMoreMenu(props) {
         <MoreVertIcon fontSize='small' />
       </IconButton>
       <Menu anchorEl={anchorEl} keepMounted open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={onClickEdie}>Edit</MenuItem>
+        <MenuItem
+          onClick={() => {
+            onClickEdie();
+            setAnchorEl(null);
+          }}
+        >
+          Edit
+        </MenuItem>
         <MenuItem
           onClick={async () => {
             const ok = await alert('Are you sure you want to delete?', 'Confirmation');
-
             if (ok) {
               dispatch(deleteSubtask({ id: jobId }));
               dispatch(showSuccess());
             }
+            setAnchorEl(null);
           }}
         >
           Delete
@@ -138,12 +161,25 @@ export default function Tasks() {
   const tasksData = useSelector(({ home }) => home.tasks.tasks);
   const jobsData = useSelector(({ home }) => home.tasks.jobs);
 
+  const accountsData = useSelector(({ home }) => home.users.accounts);
+
   const [subTaskData, setSubTaskData] = React.useState({});
   const [taskData, setTaskData] = React.useState({});
 
   React.useEffect(() => {
     dispatch(getTasksData());
   }, []);
+
+  React.useEffect(() => {
+    ListWebSocket.on('updateTask', updateData);
+  }, [tasksData]);
+
+  const updateData = taskId => {
+    if (taskId === 0 || (_.isNumber(taskId) && taskId in tasksData)) {
+      dispatch(getTasksData());
+      dispatch(showSuccess('Updated'));
+    }
+  };
 
   const handleExpandClick = taskId => {
     if (taskId in expanded) {
@@ -157,7 +193,6 @@ export default function Tasks() {
 
   const handleOnCreateOrUpdate = React.useCallback(
     async data => {
-      console.log(data);
       if (_.isNumber(data.id)) {
         dispatch(updateSubtask(data));
       } else {
@@ -206,8 +241,7 @@ export default function Tasks() {
                     />
                     <CardContent>
                       <Typography variant='subtitle2' color='text.secondary'>
-                        This impressive paella is a perfect party dish and a fun meal to cook together with your guests. Add 1 cup of frozen
-                        peas along with the mussels, if you like.
+                        {tasksData[taskId].descriptions}
                       </Typography>
                     </CardContent>
                     {taskId in jobsData && (
@@ -355,14 +389,17 @@ export default function Tasks() {
         data={subTaskData}
         onSubmitted={handleOnCreateOrUpdate}
       />
-      <TaskInfoDialog
-        open={!_.isEmpty(taskData)}
-        onClose={() => {
-          setTaskData({});
-        }}
-        data={taskData}
-        onSubmitted={handleOnUpdateTask}
-      />
+      {accountsData && (
+        <TaskInfoDialog
+          open={!_.isEmpty(taskData)}
+          onClose={() => {
+            setTaskData({});
+          }}
+          accounts={accountsData}
+          data={taskData}
+          onSubmitted={handleOnUpdateTask}
+        />
+      )}
     </Box>
   );
 }
