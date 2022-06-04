@@ -9,12 +9,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import FormTextField from 'app/widgets/Form/FormTextField';
 import FormSelectField from 'app/widgets/Form/FormSelectField';
 import { yupResolver } from '@hookform/resolvers/yup';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import * as yup from 'yup';
 import _ from 'lodash';
 

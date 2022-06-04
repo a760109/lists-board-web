@@ -16,7 +16,7 @@ class ListWebSocket extends ListUtils.EventEmitter {
   };
 
   onOpen = event => {
-    console.log(`WebSocket onOpen`, event);
+    // console.log(`WebSocket onOpen`, event);
   };
 
   onError = event => {
@@ -24,7 +24,7 @@ class ListWebSocket extends ListUtils.EventEmitter {
   };
 
   onClose = event => {
-    console.log(`WebSocket onClose code=${event.code}`, event);
+    // console.log(`WebSocket onClose code=${event.code}`, event);
     setTimeout(() => this.connect(), 15000);
   };
 
