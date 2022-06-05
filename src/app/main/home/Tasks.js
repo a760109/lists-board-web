@@ -29,6 +29,9 @@ import Tooltip from '@mui/material/Tooltip';
 import { useAlert } from 'app/widgets/Alert';
 import { showSuccess } from 'app/store/messageSlice';
 import { ListWebSocket } from 'app/services/webSocket';
+import { useDrag, useDrop } from 'react-dnd';
+
+const JobType = Symbol();
 
 const colorSelect = {
   tPendingButton: blueGrey[300],
@@ -56,6 +59,222 @@ const ExpandMore = styled(props => {
   }),
 }));
 
+function Job(props) {
+  const { data, setSubTaskData } = props;
+  const dispatch = useDispatch();
+
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: JobType,
+      item: () => ({ data }),
+      end: (item, monitor) => {
+        const dropResult = monitor.getDropResult();
+        if (item && dropResult) {
+          dispatch(updateSubtask({ ...item.data, taskId: dropResult.taskId }));
+        }
+      },
+      collect: monitor => ({
+        isDragging: monitor.isDragging(),
+      }),
+    }),
+    [data],
+  );
+
+  return (
+    <Card
+      ref={drag}
+      sx={{
+        width: 280,
+        padding: 0,
+        backgroundColor: data.status === 'pending' ? colorSelect.jPending : colorSelect.jDone,
+        ...(isDragging
+          ? {
+              background: 'rgb(235,235,235)',
+              opacity: 0,
+            }
+          : {}),
+      }}
+    >
+      <CardHeader
+        avatar={
+          <Avatar sx={{ bgcolor: 'red', width: 24, height: 24 }} aria-label='recipe'>
+            {data.status.charAt(0).toUpperCase()}
+          </Avatar>
+        }
+        action={
+          <SubTeakMoreMenu
+            jobId={data.id}
+            onClickEdie={() => {
+              setSubTaskData({ ...data });
+            }}
+            setSubTaskData={setSubTaskData}
+          />
+        }
+        title={`${data.name}`}
+        sx={{ paddingBottom: 0, paddingLeft: 1, paddingRight: 1 }}
+        subheader={data.descriptions}
+      />
+      <CardContent sx={{ paddingBottom: 0 }}>
+        <Typography variant='caption' display='block' gutterBottom>
+          Creator: {data.account}
+        </Typography>
+        <Typography variant='caption' display='block' gutterBottom>
+          Price: {data.price}
+        </Typography>
+        <Typography variant='caption' display='block' gutterBottom>
+          Cost: {data.cost}
+        </Typography>
+      </CardContent>
+      <CardActions>
+        <Button
+          size='small'
+          variant='contained'
+          disabled={data.status === 'pending'}
+          onClick={() => {
+            dispatch(updateSubtask({ ...data, status: 'pending' }));
+          }}
+        >
+          To Pandding
+        </Button>
+        <Button
+          size='small'
+          variant='contained'
+          disabled={data.status === 'done'}
+          onClick={() => {
+            dispatch(updateSubtask({ ...data, status: 'done' }));
+          }}
+        >
+          To Done
+        </Button>
+      </CardActions>
+    </Card>
+  );
+}
+
+function Task(props) {
+  const { tasksData, jobsData, taskId, setSubTaskData, setTaskData, expanded, handleExpandClick } = props;
+
+  const [{ canDrop, isOver }, drop] = useDrop(() => ({
+    accept: JobType,
+    drop: () => ({ taskId }),
+    collect: monitor => ({
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
+    }),
+    canDrop: (item, monitor) => {
+      return item.data.taskId !== taskId;
+    },
+  }));
+
+  const isActive = canDrop && isOver;
+  let backgroundColor = null;
+  if (isActive) {
+    backgroundColor = 'darkgreen';
+  } else if (canDrop) {
+    backgroundColor = 'darkkhaki';
+  }
+
+  return (
+    <Card
+      sx={{
+        width: 300,
+        backgroundColor:
+          tasksData[taskId].status === 'pending'
+            ? colorSelect.tPending
+            : tasksData[taskId].status === 'done'
+            ? colorSelect.tDone
+            : colorSelect.tProcess,
+      }}
+    >
+      <CardHeader
+        ref={drop}
+        action={!canDrop && <TeakMoreMenu taskId={taskId} tasksData={tasksData} setSubTaskData={setSubTaskData} setTaskData={setTaskData} />}
+        title={`Task-${taskId}: ${tasksData[taskId].name}`}
+        sx={{ paddingBottom: 0, paddingLeft: 1, paddingRight: 1, backgroundColor }}
+        subheader={`${tasksData[taskId].account} (${capitalizeFirstLetter(tasksData[taskId].scope)})`}
+      />
+      {!canDrop && (
+        <CardContent>
+          <Typography variant='subtitle2' color='text.secondary'>
+            {tasksData[taskId].descriptions}
+          </Typography>
+        </CardContent>
+      )}
+      {taskId in jobsData && !canDrop && (
+        <>
+          <CardActions
+            sx={{
+              cursor: 'pointer',
+              backgroundColor:
+                tasksData[taskId].status === 'pending'
+                  ? colorSelect.tPendingButton
+                  : tasksData[taskId].status === 'done'
+                  ? colorSelect.tDoneButton
+                  : colorSelect.tProcessButton,
+            }}
+            onClick={() => handleExpandClick(taskId)}
+            disableSpacing
+          >
+            <CircularProgressWithLabel value={tasksData[taskId].progress} />
+            <Typography variant='subtitle2' sx={{ paddingLeft: 1 }}>
+              {capitalizeFirstLetter(tasksData[taskId].status)}
+            </Typography>
+            <Grid container direction='row' alignItems='center' spacing={0}>
+              <Grid item>
+                <Tooltip title='Completed Cost'>
+                  <IconButton>
+                    <AttachMoneyIcon disabled fontSize='small' />
+                  </IconButton>
+                </Tooltip>
+              </Grid>
+              <Grid item>
+                <Typography variant='subtitle2'>{tasksData[taskId].doneCost}</Typography>
+              </Grid>
+            </Grid>
+            <ExpandMore expand={expanded[taskId]} disabled aria-expanded={expanded[taskId]}>
+              <ExpandMoreIcon fontSize='small' />
+            </ExpandMore>
+          </CardActions>
+          {expanded[taskId] && (
+            <CardActions>
+              <Collapse in={expanded[taskId]} timeout='auto' unmountOnExit>
+                <List
+                  dense
+                  disablePadding
+                  sx={{
+                    width: '100%',
+                    maxHeight: 300,
+                    position: 'relative',
+                    overflow: 'auto',
+                    '& ul': { padding: 0 },
+                    padding: 0,
+                    '&::-webkit-scrollbar': {
+                      width: '0.4em',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      boxShadow: 'inset 0 0 6px rgba(0,0,0,0.00)',
+                      webkitBoxShadow: 'inset 0 0 6px rgba(0,0,0,0.00)',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'rgba(0,0,0,.1)',
+                      outline: '1px solid slategrey',
+                    },
+                  }}
+                >
+                  {jobsData[taskId].map(d => (
+                    <ListItem dense disableGutters key={d.id}>
+                      <Job data={d} setSubTaskData={setSubTaskData} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            </CardActions>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
 function TeakMoreMenu(props) {
   const { taskId, tasksData, setSubTaskData, setTaskData } = props;
 
@@ -152,7 +371,6 @@ function SubTeakMoreMenu(props) {
 
 export default function Tasks() {
   const dispatch = useDispatch();
-  const alert = useAlert();
 
   const [expanded, setExpanded] = React.useState({});
 
@@ -220,160 +438,15 @@ export default function Tasks() {
               .sort()
               .map(taskId => (
                 <Grid item key={taskId}>
-                  <Card
-                    sx={{
-                      width: 300,
-                      backgroundColor:
-                        tasksData[taskId].status === 'pending'
-                          ? colorSelect.tPending
-                          : tasksData[taskId].status === 'done'
-                          ? colorSelect.tDone
-                          : colorSelect.tProcess,
-                    }}
-                  >
-                    <CardHeader
-                      action={<TeakMoreMenu taskId={taskId} tasksData={tasksData} setSubTaskData={setSubTaskData} setTaskData={setTaskData} />}
-                      title={`Task-${taskId}: ${tasksData[taskId].name}`}
-                      sx={{ paddingBottom: 0, paddingLeft: 1, paddingRight: 1 }}
-                      subheader={`${tasksData[taskId].account} (${capitalizeFirstLetter(tasksData[taskId].scope)})`}
-                    />
-                    <CardContent>
-                      <Typography variant='subtitle2' color='text.secondary'>
-                        {tasksData[taskId].descriptions}
-                      </Typography>
-                    </CardContent>
-                    {taskId in jobsData && (
-                      <>
-                        <CardActions
-                          sx={{
-                            cursor: 'pointer',
-                            backgroundColor:
-                              tasksData[taskId].status === 'pending'
-                                ? colorSelect.tPendingButton
-                                : tasksData[taskId].status === 'done'
-                                ? colorSelect.tDoneButton
-                                : colorSelect.tProcessButton,
-                          }}
-                          onClick={() => handleExpandClick(taskId)}
-                          disableSpacing
-                        >
-                          <CircularProgressWithLabel value={tasksData[taskId].progress} />
-                          <Typography variant='subtitle2' sx={{ paddingLeft: 1 }}>
-                            {capitalizeFirstLetter(tasksData[taskId].status)}
-                          </Typography>
-                          <Grid container direction='row' alignItems='center' spacing={0}>
-                            <Grid item>
-                              <Tooltip title='Completed Cost'>
-                                <IconButton>
-                                  <AttachMoneyIcon disabled fontSize='small' />
-                                </IconButton>
-                              </Tooltip>
-                            </Grid>
-                            <Grid item>
-                              <Typography variant='subtitle2'>{tasksData[taskId].doneCost}</Typography>
-                            </Grid>
-                          </Grid>
-                          <ExpandMore expand={expanded[taskId]} disabled aria-expanded={expanded[taskId]}>
-                            <ExpandMoreIcon fontSize='small' />
-                          </ExpandMore>
-                        </CardActions>
-                        {expanded[taskId] && (
-                          <CardActions>
-                            <Collapse in={expanded[taskId]} timeout='auto' unmountOnExit>
-                              <List
-                                dense
-                                disablePadding
-                                sx={{
-                                  width: '100%',
-                                  maxHeight: 300,
-                                  position: 'relative',
-                                  overflow: 'auto',
-                                  '& ul': { padding: 0 },
-                                  padding: 0,
-                                  '&::-webkit-scrollbar': {
-                                    width: '0.4em',
-                                  },
-                                  '&::-webkit-scrollbar-track': {
-                                    boxShadow: 'inset 0 0 6px rgba(0,0,0,0.00)',
-                                    webkitBoxShadow: 'inset 0 0 6px rgba(0,0,0,0.00)',
-                                  },
-                                  '&::-webkit-scrollbar-thumb': {
-                                    backgroundColor: 'rgba(0,0,0,.1)',
-                                    outline: '1px solid slategrey',
-                                  },
-                                }}
-                              >
-                                {jobsData[taskId].map(d => (
-                                  <ListItem dense disableGutters key={d.id}>
-                                    <Card
-                                      sx={{
-                                        width: 280,
-                                        padding: 0,
-                                        backgroundColor: d.status === 'pending' ? colorSelect.jPending : colorSelect.jDone,
-                                      }}
-                                    >
-                                      <CardHeader
-                                        avatar={
-                                          <Avatar sx={{ bgcolor: 'red', width: 24, height: 24 }} aria-label='recipe'>
-                                            {d.status.charAt(0).toUpperCase()}
-                                          </Avatar>
-                                        }
-                                        action={
-                                          <SubTeakMoreMenu
-                                            jobId={d.id}
-                                            onClickEdie={() => {
-                                              setSubTaskData({ ...d });
-                                            }}
-                                            setSubTaskData={setSubTaskData}
-                                          />
-                                        }
-                                        title={`${d.name}`}
-                                        sx={{ paddingBottom: 0, paddingLeft: 1, paddingRight: 1 }}
-                                        subheader={d.descriptions}
-                                      />
-                                      <CardContent sx={{ paddingBottom: 0 }}>
-                                        <Typography variant='caption' display='block' gutterBottom>
-                                          Creator: {d.account}
-                                        </Typography>
-                                        <Typography variant='caption' display='block' gutterBottom>
-                                          Price: {d.price}
-                                        </Typography>
-                                        <Typography variant='caption' display='block' gutterBottom>
-                                          Cost: {d.cost}
-                                        </Typography>
-                                      </CardContent>
-                                      <CardActions>
-                                        <Button
-                                          size='small'
-                                          variant='contained'
-                                          disabled={d.status === 'pending'}
-                                          onClick={() => {
-                                            dispatch(updateSubtask({ ...d, status: 'pending' }));
-                                          }}
-                                        >
-                                          To Pandding
-                                        </Button>
-                                        <Button
-                                          size='small'
-                                          variant='contained'
-                                          disabled={d.status === 'done'}
-                                          onClick={() => {
-                                            dispatch(updateSubtask({ ...d, status: 'done' }));
-                                          }}
-                                        >
-                                          To Done
-                                        </Button>
-                                      </CardActions>
-                                    </Card>
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </Collapse>
-                          </CardActions>
-                        )}
-                      </>
-                    )}
-                  </Card>
+                  <Task
+                    tasksData={tasksData}
+                    jobsData={jobsData}
+                    taskId={_.toNumber(taskId)}
+                    setSubTaskData={setSubTaskData}
+                    setTaskData={setTaskData}
+                    expanded={expanded}
+                    handleExpandClick={handleExpandClick}
+                  />
                 </Grid>
               ))}
           </Grid>
