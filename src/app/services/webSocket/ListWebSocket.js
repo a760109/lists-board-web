@@ -3,6 +3,8 @@ import ListUtils from 'app/utils/ListUtils';
 
 class ListWebSocket extends ListUtils.EventEmitter {
   connect = TOKEN => {
+    this._token = TOKEN;
+
     if (this._ws) {
       this._ws.onclose = null;
       this._ws.close();
@@ -13,10 +15,12 @@ class ListWebSocket extends ListUtils.EventEmitter {
     this._ws.onmessage = this.onMessage.bind(this);
     this._ws.onerror = this.onError.bind(this);
     this._ws.onclose = this.onClose.bind(this);
+
+    this.pingInterval = setInterval(() => this.ping(), 30000);
   };
 
   onOpen = event => {
-    // console.log(`WebSocket onOpen`, event);
+    console.log(new Date(), `WebSocket onOpen`, event);
   };
 
   onError = event => {
@@ -24,8 +28,8 @@ class ListWebSocket extends ListUtils.EventEmitter {
   };
 
   onClose = event => {
-    // console.log(`WebSocket onClose code=${event.code}`, event);
-    setTimeout(() => this.connect(), 15000);
+    console.log(new Date(), `WebSocket onClose code=${event.code}`, event);
+    setTimeout(() => this.connect(this._token), 500);
   };
 
   onMessage = event => {
@@ -38,7 +42,10 @@ class ListWebSocket extends ListUtils.EventEmitter {
   };
 
   ping = () => {
-    this._ws.send(JSON.stringify({ type: 'ping' }));
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      console.log(new Date(), 'ping');
+      this._ws.send(JSON.stringify({ type: 'ping' }));
+    }
   };
 }
 

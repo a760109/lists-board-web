@@ -69,7 +69,7 @@ function Message(props) {
     return () => {
       axios.interceptors.response.eject(id);
     };
-  }, []);
+  });
 
   return (
     <StyledSnackbar
